@@ -9,6 +9,10 @@ __pycache__/
 # data
 data/
 
+# ipynb
+.ipynb_checkpoints
+.idea
+
 # Distribution / packaging
 .Python
 build/
