@@ -1,0 +1,6 @@
+# Need to install the following
+
+pip install --user tensorflow_probabilities
+pip install --user pandas
+pip install --user matplotlib
+pip install --user jupyterlab
