@@ -4,7 +4,7 @@
 
 **Abstract**
 
-
+I made an autoencoder to measure latent personality traits in a meaningful way using personality survey responses, because these measurements can accurately be decoded back into survey responses. I created a method to interpret each dimension in the latent personality layer of the 
 
 **Background**
 
