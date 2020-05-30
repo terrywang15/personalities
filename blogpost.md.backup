@@ -10,7 +10,7 @@
 
 Personality testing, or the search for orthogonal dimensions that explain the more nebulous concept of "personality", is a fascinating field with a lot of competing and compelling theories. The most well-known implimentation of such theories would be the Myers-Briggs Type Indicator (MBTI), which, while influential, is beset with criticism of lack of scientific vigor in its development. Many academic psychology researchers have proposed the Big-Five personality traits of openness, conscientiousness, extroversion, agreeableness, and neuroticism. Subsequently, a questionnaire was developed as a standardized way to capture the Big Five factors via adjectives that supposedly reflect these factors to varying degrees. (https://openpsychometrics.org/tests/IPIP-BFFM/) This questionnaire is now an open project online and free to the public, and the data from this project is available at Kaggle (https://www.kaggle.com/tunguz/big-five-personality-test).
 
-While there is no doubt that the Big-Five theory is developed with a considerable amount of scientific vigor, it is still a categorization that arises from human intuition that may or may not reflect the actual mechanisms of how personalities inform behavior via self-description. Compared to a more "natural" clustering approach, which I will elaborate further in this post, the Big-Five theory pre-assigns the five orthogonal dimensions of personality, and then try to capture those dimensions through the use of purposeful adjectives that reflect those dimensions. For example, to capture the Neuroticism dimension, the survey would use words like "irritated", "stressed", and "worry", which according to research more or less capture these dimensions specifically (See Goldberg 1992, https://psycnet.apa.org/doiLanding?doi=10.1037%2F1040-3590.4.1.26). A potential issue is that this approach assumes that these **particular** five dimensions would explain the answers obtained from the surveys, meaning that if the theory is not correct, i.e. some of these big-five traits are not orthogonal to each other, the model would prove much less meaningful.
+While there is no doubt that the Big-Five theory is developed with a considerable amount of scientific vigor, it is still a categorization that arises from human intuition that may or may not reflect the actual mechanisms of how personalities inform behavior via self-description. Compared to a more "natural" clustering approach, which I will elaborate further in this post, the Big-Five theory pre-assigns the five orthogonal dimensions of personality, and then try to capture those dimensions through the use of purposeful adjectives that reflect those dimensions. For example, to capture the Neuroticism dimension, the survey would use words like "irritated", "stressed", and "worry", which according to research more or less capture these dimensions specifically (See [Goldberg 1992](https://psycnet.apa.org/doiLanding?doi=10.1037%2F1040-3590.4.1.26)). A potential issue is that this approach assumes that these **particular** five dimensions would explain the answers obtained from the surveys, meaning that if the theory is not correct, i.e. some of these big-five traits are not orthogonal to each other, the model would prove much less meaningful.
 
 The idea that inspired this post is the following: what if we reverse this thought process, and design a survey that captures a wide range of adjectives, then use machine learning algorithms (or Bayesian methods) to come up with a much smaller number of orthogonal dimensions of personalities? Similar to the Big-Five approach, this uses a mental model where a few latent dimensions would beget the answers in the survey. But to the contrary of that approach, we would not pre-suppose what those dimensions are, in human concepts, but attempt to interpret those dimensions **after** we have obtained them. Moreover, we are not limited by the number of dimensions, but we can try to fit the model with many different number of latent dimensions to see which ones lead to accurate and more interpretable results. I believe this is a viable approach given the advances in computing power since the days Big-Five was developed, and it might lead to some surprise findings in human psychology. 
 
@@ -20,34 +20,173 @@ The data is a collection of just over 1 million survey answers to a standardized
 
 There are about 2000 rows where all columns are missing data and were deleted. Additionally, about 13% of the rows include answers that are 0 instead of 1-5. This is most likely due to the respondent failing to provide any answer to that question (i.e. missing response), but due to computational constraints, I have decided to not include any rows with such answers. I also decided to only keep the 50 columns recording the answers in Likert scale, as the information from the other columns are out of scope of this investigation, so finally I am left with a dataset with 877434 rows and 50 columns.
 
+Further, I mapped the likert scale answers to a new scale using the following formula: 
+
+	1: -0.9
+	2: -0.4
+	3: -0.1
+	4: 0.4
+	5: 0.9
+
+There is no particular reasons why this is used other than it maps nicely to the output of a hyperbolic tangent function, which is used as the activation function of the decoder's output layer. This definitely merits further exploration in the next iteration of this project.
+
 **Method**
 
 Let's set up the following mental model that represents how the theory of personality types work:
 
-![Personality Type Mental Model](graphs/Model.png)
+![*Personality Type Mental Model*](graphs/Model.png)
 
-This graph basically says there are a small number of personality types or traits (in this case there are five) that are orthogonal or independent of each other. These personality traits could each be a random variable or just a number, depending on how you wish to model them. According to this model, each person would have a different set of (5) numbers to represent their personality measurements. Then, these traits will go through a transformation process, which can involve adding them, weighing them, and multiplying them, etc., that ultimately produce a vector representing the answers a person would give on the personality test, i.e. the answers to the 50 questions on the scale of 1-5. 
+This graph basically says there are a small number of personality types or traits (in this case there are five) that are orthogonal or independent of each other. These personality traits could each be a random variable or just a number, depending on how you wish to model them. According to this model, each person would have a different set of (5) numbers to represent their personality measurements. Then, these traits will go through a transformation process, which can involve adding them, weighing them, and multiplying them, etc., that ultimately produce a vector representing the answers a person would give on the personality test, i.e. the answers to the 50 questions on the scale of 1-5.  
 
 If this model is an accurate representation of the natural process through which humans answer personality survey questions, then theoretically we will be able to backtrack from the answers to their personality types that resulted in these particular answers in the first place. 
 
-Ostensibly this is 
+Ostensibly this is basically the underlying model of Big-Five personalities - five orthogonal personality types, each with its own score, end up producing the answers. However the Big-Five personality test as administered on Open Psychometrics makes the following additional major assumptions:
 
+1. That the five underlying personalities are openness, conscientiousness, extroversion, agreeableness, and neuroticism, and these are orthogonal qualities (see **background** for my critique of this);
+2. That, for each of these personalities, only 10 questions out of the 50 are relevant, because they are designed to be so;
+3. That the score for each of the personalities is a simple addition/subtraction of the answers to the relevant questions. For example, the neuroticism score is the sum of the answers on a 1-5 scale to the questions relevant to neuroticism. (Some questions have negative value. For details regarding scoring [click here](https://ipip.ori.org/new_ipip-50-item-scale.htm)).
 
+As we can see, the Open Psychometrics test makes no attempt to make the measurement meaningful. The personality measurements, by being a simple addition of points, are unclear as to its real meaning. If our mental model is to be believed, there must be some sort of proof that personality measurements lead to answers given, but this sort of proof is simply absent. 
 
-**Data**
+My contention is that, if this mental model were an accurate representation of the natural process through which humans answer personality survey questions, then theoretically we will be able to backtrack from the answers to their personality types that resulted in these particular answers in the first place. Therefore, we should be able to build a model that "encodes" survey answers into a vector of length 5, in order to keep within the framework of Big-Five personalities. We can prove that this much shorter vector is meaningful, because we can reliably "decode" it to return it to the original vector of survey answers. 
 
+Autoencoders are perfectly suited for this kind of modeling. They consist of encoders and decoders. The encoder will try to convert an input to a smaller vector representation, and the decoder will convert it back to the original input. Autoencoders are optimized to minimize the loss between the output of the decoder and the original input. Usually this model is constructed using fully connected layers of neural networks.
 
+![*Autoencoder Model*](graphs/AE.png)
+
+This kind of model accomplishes a few things:
+
+1. It provides an orthogonal set of personality measurements due to the nature of the model.
+2. It provides a means to prove that the generated personality measurements are meaningful by making sure that the model is able to reconstruct the survey answers.
+3. We can use activation functions in the personality types layer of the model to make it output a bounded measurement of each personality. For example, by using a sigmoid function as the activation function, each number generated from that layer will be between 0 and 1. This helps with interpreting the personality measurements
+4. It makes less assumptions about what each survey question is measuring
+
+However, the difficult thing is to make sense of the results obtained from the personality types layer. Yes, we are getting 5 numbers between 0 and 1, but which personality does each number correspond to?
+
+To answer this, my proposition is to say, these 5 numbers must affect the decoding in their own way for them to have meaning. If we completely remove the connections in the model relevant to that personality type, the decoder will have a harder time reconstructing some answers than others. Because we already know what each question is, we can simply remove each of the 5 personalities one at a time and see the corresponding drop in performance for each question relative to keeping all 5 personalities intact, then that will provide a clue as to what that number is measuring. For example, if we disconnect personality 1 from the model, and the most affected questions turn out to be "I am the life of the party." and "I feel comfortable around people.", then we can say that this number is a measurement of extroversion. We will apply this concept and explore further in the **Latent Dimension Interpretation** section of this article.
 
 **Model**
 
+The model used is a simple autoencoder following a conventional structure. It consists of an encoder and a decoder. The encoder takes a vector of length 50 (the number of questions in the survey), then feeds it into a dense layer of 128 elements, then to a batch normalization and dropoff layer for regularization. This step is repeated 3 times in total, then the model transforms the output to a vector of length 5, using a sigmoid activation function. This vector will be the output of our encoder model and will serve as the  measurements for the 5 personalities.
 
+The decoder goes in reverse, taking the 5 personality measurements and transforms them into the vector of survey responses. It will have the exact same structure as the decoder but in reverse: the input layer takes a vector of length 5 and the output is a vector of length 50. The output layer will also use a hyperbolic tangent (tanh) function as the activation function, so that the output will be within the range of -1 and 1, the way that we coded the survey responses (see **data** section).
+
+For details on the model, see the training script [on my GitHub page]("https://github.com/terrywang15/personalities/blob/master/Modeling.py").
+
+The model is trained using Adam optimizer with a learning rate of 0.001 and mean squared error loss function. It is trained on 70% of the rows in the data and validated on the rest. In the personality measurement layer (the last layer of the encoder and the first layer of the decoder), I explored making the length the layer to be either 4 or 5 and using either tanh or sigmoid as the activation function, and have obtained the following mean squared error for each situation:
+
+|         | 4      | 5      |
+|---------|--------|--------|
+| tanh    | 0.1555 | 0.1405 |
+| sigmoid | 0.1417 | 0.1291 |
+
+As expected, the model with 5 orthogonal personalities does better overall than the model with 4 orthogonal personalities, simply by having quite a few more parameters (257 more in this case). The more interesting part is the activation function, as we can see sigmoid gives a significant boost to the model over tanh. I will discuss more about the activation function in the next section as it relates to interpretation as well.
 
 **Latent Dimension Interpretation**
 
+The latent layer, or the layer showing personality measurements, consists of a number of (in this case, 4 or 5) numbers between 0 and 1. These numbers can be thought of as a lower dimension representation of the 50 survey responses similar to the ones obtained from Principle Component Analysis, but it can also be interpreted using our mental model as the underlying personality traits that "generated" the survey responses. 
 
+To make sense of each of the numbers, I have laid out a method in the **Method** section. To recap, I will reconstruct the model using trained weights but taking out one dimension from the encoder output one at a time, then see which questions are most impacted in the decoder output in terms of total mean squared error. Taking out one dimension from the encoder output will also lead to eliminating the corresponding weights associated with that dimension in the layer immediately before and after the encoder output, due to the nature of a fully-connected layer in a neural network. This is can be done via a function. For details of the implementation, see [my GitHub page]("https://github.com/terrywang15/personalities/blob/master/Processing%20and%20Modeling.ipynb).
+
+The result is graphed in a line graph where the X-axis is the question number and the Y-axis is the total mean squared error. Each line color corresponds to which personality dimension was removed. As an example, the below graph shows the total mean squared error for each question when one of the nodes in the encoder output layer is removed.
+
+![*Sample output*](graphs/perso_types.png)
+
+One main point of discovery from this process is that using an activation function that is different from the one used in the dense layers may lead to more interpretable results. Consider the following two graphs: the top graph shows the total decoder error when model uses hyperbolic tangent activation function in the encoder output layer, and the bottom graph's model uses sigmoid. 
+
+![*Output using tanh activation function*](graphs/perso_types.png)
+
+![*Output using sigmoid activation function*](models/2020-05-16 18-45/perso_types.png)
+
+We can see that in the top graph, there seems to be a greater tendency for lies to be bunched up together, meaning that any particular node in the encoder output layer does not have a particularly big impact all by itself (except Perso 3, which seems to be the only node that had an impact that is discernible from the other nodes). This is contrasted with the bottom graph, in which we can clearly see each line has more individualized movement. My hypothesis is that, using a different activation function makes the layer more distinct from the other layers and therefore each node will be more individualized. For the other layers, due to the use of dropoff, the nodes are regularized to be indistinguishable so as to not overfit the training data, a fact that might spill over to the output layer of the encoder and leading to uniform impact. If this hypothesis is correct, it may be a technique to use for constructing neural network models when we need a layer where each node has a different impact, something that is useful for interpretation.
+
+Using the model with 5 personalities and sigmoid activation function, we can collect the top 10 affected questions for each personality and try to interpret what each personality dimension measures. These questions are ranked by their total mean squared error.
+
+Personality 1:
+
+1. 'I have frequent mood swings.',
+2. 'I do not have a good imagination.',
+3. 'I make a mess of things.',
+4. 'I change my mood a lot.',
+5. 'I often forget to put things back in their proper place.',
+6. 'I get upset easily.',
+7. 'I seldom feel blue.',
+8. 'I get irritated easily.',
+9. 'I insult people.',
+10. 'I have difficulty understanding abstract ideas.'
+
+These questions seems to deal with neuroticism, but they can describe someone with an abrasive personality who lacks imagination and social skills. I call this toxic-neuroticism.
+
+Personality 2:
+
+1. 'I have frequent mood swings.',
+2. 'I change my mood a lot.',
+3. 'I get irritated easily.',
+4. 'I get upset easily.',
+5. 'I talk to a lot of different people at parties.',
+6. 'I get chores done right away.',
+7. 'I seldom feel blue.',
+8. 'I leave my belongings around.',
+9. 'I often forget to put things back in their proper place.',
+10. 'I insult people.'
+
+These questions largely overlap with Personality 1, but this person seems to be more functional and outgoing. I call this social-neuroticism.
+
+Personality 3:
+
+1. "I don't talk a lot.",
+2. I have little to say.',
+3. 'I keep in the background.',
+4. 'I start conversations.',
+5. 'I talk to a lot of different people at parties.',
+6. 'I am quiet around strangers.',
+7. "I don't like to draw attention to myself.",
+8. "I don't mind being the center of attention.",
+9. 'I feel comfortable around people.',
+10. 'I am the life of the party.'
+
+These question seem to describe the introversion-extroversion dimension.
+
+Personality 4:
+
+1. 'I follow a schedule.',
+2. 'I like order.',
+3. 'I often forget to put things back in their proper place.',
+4. 'I worry about things.',
+5. 'I get stressed out easily.',
+6. 'I leave my belongings around.',
+7. 'I make a mess of things.',
+8. 'I shirk my duties.',
+9. "I don't talk a lot.",
+10. 'I am always prepared.'
+
+These seem to be mostly about conscientiousness.
+
+Personality 5:
+
+1. 'I talk to a lot of different people at parties.',
+2. 'I am quiet around strangers.',
+3. "I don't talk a lot.",
+4. 'I often forget to put things back in their proper place.',
+5. 'I seldom feel blue.',
+6. 'I leave my belongings around.',
+7. 'I get chores done right away.',
+8. 'I have frequent mood swings.',
+9. 'I start conversations.',
+10. 'I keep in the background.'
+
+These questions describe a hodgepodge of things combining some elements found above.
+
+So to conclude, it does seem that only a subset of questions are the most relevant when it comes to predicting survey responses using this set of 5 latent personality dimensions, and most of them have to do with neuroticism. It might point to sub-dimensions within the concept of neuroticism that this survey fails to capture. But otherwise, we did get at least 2 very clearly interpretable personality dimensions, which seems to confirm that there is at least some innate abilities to govern introversion-extroversion and conscientiousness.
+
+Thus, using the encoder as a standalone tool, we can take anyone's responses to the 50 questions and output how they measure on each of the 5 personality dimensions outlined above.
 
 **Conclusions and Next Steps**
 
+This is a very crude, unscientific, and hastily put-together study on personalities, but it shows some promise in modeling personality in a more data-driven manner might yield some surprising and significant results. For the next iteration of this model, I will explore the following:
+
+1. Dramatically reduce the number of parameters in the model. Since model accuracy is not the main concern, reducing the number of parameters will hopefully yield more interpretable results and make the model more generalizable.
+2. Model latent personality dimensions as random variables. This can be achieved using Variational Autoencoder structure, in which the latent personality layer's output is drawn from a set of distributions whose parameters are generated by some neural network. This might be a better way to model personalities because they might be fluid and people may be affected by mood swings when they take the personality test. I will also explore ways to use a Bayesian model and Markov Chain Monte Carlo techniques to model the responses using a set number of latent personality dimensions as an alternative to neural networks.
 
 
 
@@ -55,17 +194,10 @@ Ostensibly this is
 
 
 
+See also:
 
+[https://openpsychometrics.org/tests/IPIP-BFFM/](https://openpsychometrics.org/tests/IPIP-BFFM/)
 
+[https://ipip.ori.org/new_ipip-50-item-scale.htm](https://ipip.ori.org/new_ipip-50-item-scale.htm)
 
-
-
-
-
-
-
-https://openpsychometrics.org/tests/IPIP-BFFM/
-
-https://ipip.ori.org/new_ipip-50-item-scale.htm
-
-https://www.kaggle.com/tunguz/big-five-personality-test
+[https://www.kaggle.com/tunguz/big-five-personality-test](https://www.kaggle.com/tunguz/big-five-personality-test)
